@@ -1,0 +1,57 @@
+{
+  "selected_tool": "Batch File Renamer",
+  "output_directory": "C:\\Users\\aanastasiou\\Desktop\\XENOS\\XENOS\\\u039c\u0391\u0398\u0397\u039c\u0391\u03a4\u0391\\\u03a0\u03a1\u039f\u03aa\u03a3\u03a4\u039f\u03a1\u0399\u039a\u0397 \u0391\u03a1\u03a7\u0391\u0399\u039f\u039b\u039f\u0393\u0399\u0391",
+  "file_paths": [],
+  "plugin_options": {
+    "Batch File Renamer": {
+      "add_num_var": false,
+      "case_var": "No Change",
+      "clean_special_var": false,
+      "date_mode_var": "None",
+      "date_pos_var": "Prefix",
+      "find_var": "",
+      "num_pad_var": "3",
+      "num_pos_var": "Suffix",
+      "num_start_var": "1",
+      "prefix_var": "",
+      "replace_var": "",
+      "space_mode_var": "Keep Spaces",
+      "suffix_var": "",
+      "trim_end_var": "0",
+      "trim_start_var": "0",
+      "use_regex_var": false
+    },
+    "N-up & Booklet": {
+      "binding_var": "Auto",
+      "cols_var": "2",
+      "mode_var": "Booklet",
+      "output_name_var": "nup_output.pdf",
+      "rotation_var": "None",
+      "rows_var": "2"
+    },
+    "Document Merger": {
+      "output_name_var": "merged_output.pdf"
+    },
+    "Image / Doc Stitcher": {
+      "cols_var": "2",
+      "layout_var": "Vertical",
+      "output_name_var": "stitched_output.jpg",
+      "quality_var": "85",
+      "rows_var": "2",
+      "zoom_var": "2"
+    },
+    "Docs to Markdown": {
+      "combine_name_var": "output.md",
+      "combine_var": false,
+      "m1_var": true,
+      "m2_var": false,
+      "m3_var": false,
+      "m_ocr_var": false,
+      "ocr_pages_var": "",
+      "overwrite_var": true,
+      "pptx_img_width_var": "",
+      "pptx_min_block_var": ""
+    }
+  },
+  "geometry": "1000x640+156+156"
+}
