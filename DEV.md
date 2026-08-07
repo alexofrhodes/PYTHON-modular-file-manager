@@ -1,16 +1,16 @@
 # Plugin development
 
-How to add a tool that works in the host (`app.py`), as a standalone GUI, and from the CLI.
+How to add a tool that works in the host (`modular-file-manager.py`), as a standalone GUI, and from the CLI.
 
 ## Layout
 
 ```
 PYTHON-modular-file-manager/
-  app.py              # BaseFileOperation, theme, host UI, StandalonePluginApp, plugin_entry
+  modular-file-manager.py   # BaseFileOperation, theme, host UI, StandalonePluginApp, plugin_entry
   plugins/
-    __init__.py
-    my_tool.py        # one module = one (or more) plugin class(es)
-    my_tool.md        # optional short docs
+    __init__.py             # import_host() — loads the hyphenated host module
+    my_tool.py              # one module = one (or more) plugin class(es)
+    my_tool.md              # optional short docs
   requirements.txt
 ```
 
@@ -18,13 +18,19 @@ No central registry. The host scans `plugins/` with `pkgutil.iter_modules`, impo
 
 ## Contract (`BaseFileOperation`)
 
-Import from the project root module:
+Load the host via `plugins.import_host` (the host file name has a hyphen, so it is not a normal package import):
 
 ```python
-from app import BaseFileOperation, plugin_entry
-```
+try:
+    from plugins import import_host
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from plugins import import_host
 
-When the file is run as a script, ensure the project root is on `sys.path` (existing plugins use a small try/except).
+_host = import_host()
+BaseFileOperation = _host.BaseFileOperation
+plugin_entry = _host.plugin_entry
+```
 
 | Attribute / method | Required | Purpose |
 |--------------------|----------|---------|
@@ -57,7 +63,7 @@ Helpers already on the base class (use them in CLI and GUI):
 - Store settings on `self` as `tk.StringVar` / `BooleanVar` / widgets so `execute` can read them.
 - Accept `on_change_callback` and call it when preview-relevant options change (host refreshes the queue). Signature: `render_options_ui(self, parent_frame, on_change_callback=None)`.
 - In the host sidebar, styles like `SidebarMuted.TLabel` match the sidebar background. In standalone mode the options sit on a white card — plain `ttk.Label` is fine; avoid hard-coded grey backgrounds.
-- Theme source of truth: `apply_toolkit_styles` / `DEFAULT_COLORS` in `app.py`. Prefer existing style names (`Accent.TButton`, `Toolbar.TButton`, `Card.*`, `Sidebar.*`) over new ones.
+- Theme source of truth: `apply_toolkit_styles` / `DEFAULT_COLORS` in `modular-file-manager.py`. Prefer existing style names (`Accent.TButton`, `Toolbar.TButton`, `Card.*`, `Sidebar.*`) over new ones.
 
 ## Minimal template
 
@@ -72,10 +78,14 @@ import tkinter as tk
 from tkinter import ttk
 
 try:
-    from app import BaseFileOperation, plugin_entry
+    from plugins import import_host
 except ImportError:
-    sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from app import BaseFileOperation, plugin_entry
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from plugins import import_host
+
+_host = import_host()
+BaseFileOperation = _host.BaseFileOperation
+plugin_entry = _host.plugin_entry
 
 
 class ExampleToolPlugin(BaseFileOperation):
@@ -120,7 +130,6 @@ def cli_main():
         print("No matching files.")
         sys.exit(1)
 
-    # Seed the same vars execute() expects from the GUI
     plugin.flag_var = tk.BooleanVar(value=args.flag)
     out = args.output.strip() or str(Path(files[0]).parent)
     plugin.execute(files, plugin.get_output_path(out, files))
@@ -140,7 +149,7 @@ plugin_entry(ExampleToolPlugin, cli_main)
 |----------------|----------|
 | `python plugins/example_tool.py` | No argv beyond script → `StandalonePluginApp` (compact GUI) |
 | `python plugins/example_tool.py -i ...` | Calls `cli_main()` |
-| `python app.py` | Host loads all plugins; shared queue + sidebar options |
+| `python modular-file-manager.py` | Host loads all plugins; shared queue + sidebar options |
 
 Do **not** put argparse or GUI launch code at import time (module body). Only under `cli_main` / `if __name__ == "__main__"`. Side effects on import break host auto-load.
 
@@ -181,6 +190,7 @@ Implement logic once in the plugin class; both shells only call `render_options_
 |--------|--------|
 | `file_renamer.py` | `needs_output_dir = False`, live preview columns |
 | `pdf_merger.py` | Custom `get_output_path` for a single output file |
+| `pdf_compressor.py` | Ghostscript via `tools/GhostScript` (or PATH) |
 | `flipbook_generator.py` | Mode-dependent options (N-up cols/rows) |
 | `pdf_to_markdown.py` | Multiple engines + OCR tabs |
 | `pdf_stitcher.py` | Compact option rows + CLI seeding pattern |

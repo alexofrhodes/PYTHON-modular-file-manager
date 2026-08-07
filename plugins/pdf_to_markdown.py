@@ -14,10 +14,14 @@ from docx import Document
 from pptx2md import convert, ConversionConfig
 
 try:
-    from app import BaseFileOperation, plugin_entry
+    from plugins import import_host
 except ImportError:
-    sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from app import BaseFileOperation, plugin_entry
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from plugins import import_host
+
+_host = import_host()
+BaseFileOperation = _host.BaseFileOperation
+plugin_entry = _host.plugin_entry
 
 PORTABLE_TESSERACT = Path(r"C:\Users\aanastasiou\Desktop\APPS\tesseract\tesseract.exe")
 

@@ -13,10 +13,14 @@ import pymupdf
 from PIL import Image
 
 try:
-    from app import BaseFileOperation, plugin_entry
+    from plugins import import_host
 except ImportError:
-    sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from app import BaseFileOperation, plugin_entry
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from plugins import import_host
+
+_host = import_host()
+BaseFileOperation = _host.BaseFileOperation
+plugin_entry = _host.plugin_entry
 
 
 class NupBookletPlugin(BaseFileOperation):

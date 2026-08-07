@@ -6,7 +6,7 @@ Modular desktop toolkit. Drop a plugin into `plugins/` — it auto-loads in the 
 
 ```bash
 pip install -r requirements.txt
-python app.py                          # host (all plugins)
+python modular-file-manager.py         # host (all plugins)
 python plugins/file_renamer.py         # standalone GUI (no args)
 python plugins/file_renamer.py -i a.txt --prefix x_   # CLI when args given
 ```
@@ -20,3 +20,7 @@ Quick path: drop `plugins/my_tool.py` subclassing `BaseFileOperation`, implement
 ## Output directory
 
 Plugins with `needs_output_dir = False` hide the output folder UI (e.g. Batch File Renamer). Others default to the source files’ folder when the field is empty.
+
+## PDF Compressor
+
+Uses portable Ghostscript from `tools/GhostScript/bin` (or `gs` on PATH). See [plugins/pdf_compressor.md](plugins/pdf_compressor.md).
