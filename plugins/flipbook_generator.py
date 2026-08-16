@@ -22,6 +22,37 @@ _host = import_host()
 BaseFileOperation = _host.BaseFileOperation
 plugin_entry = _host.plugin_entry
 
+# Pages per nested fold; "All" = one signature for the whole job.
+SIGNATURE_CHOICES = ("8", "16", "24", "32", "48", "All")
+DEFAULT_PAGES_PER_SIGNATURE = "32"
+
+
+def booklet_sheet_pairs(n_pages: int, pages_per_signature: int) -> list[tuple[int, int]]:
+    """0-based (left, right) page indices for each booklet sheet face across signatures."""
+    if n_pages < 0 or n_pages % 4:
+        raise ValueError("n_pages must be a non-negative multiple of 4")
+    if pages_per_signature < 4 or pages_per_signature % 4:
+        raise ValueError("pages_per_signature must be a multiple of 4 and >= 4")
+    pairs: list[tuple[int, int]] = []
+    for start in range(0, n_pages, pages_per_signature):
+        chunk = min(pages_per_signature, n_pages - start)
+        for i in range(chunk // 4):
+            pairs.append((start + chunk - 1 - 2 * i, start + 2 * i))
+            pairs.append((start + 2 * i + 1, start + chunk - 2 - 2 * i))
+    return pairs
+
+
+def parse_pages_per_signature(raw: str, total_pages: int) -> int:
+    """Resolve UI/CLI value to a signature size (multiple of 4)."""
+    text = (raw or DEFAULT_PAGES_PER_SIGNATURE).strip()
+    if text.lower() == "all":
+        return max(4, total_pages) if total_pages else 4
+    try:
+        n = int(text)
+    except ValueError:
+        n = int(DEFAULT_PAGES_PER_SIGNATURE)
+    return max(4, (n // 4) * 4)
+
 
 class NupBookletPlugin(BaseFileOperation):
     name = "N-up & Booklet"
@@ -122,6 +153,7 @@ class NupBookletPlugin(BaseFileOperation):
             stitch_dir = binding
 
         sheets: list[Image.Image] = []
+        sig_note = ""
 
         if mode == "1-up":
             sheets = pages
@@ -145,10 +177,11 @@ class NupBookletPlugin(BaseFileOperation):
             blank = Image.new("RGB", pages[0].size, (255, 255, 255))
             while len(pages) % 4:
                 pages.append(blank)
-            total = len(pages)
-            for i in range(total // 4):
-                sheets.append(self.stitch_two(pages[total - 1 - 2 * i], pages[2 * i], stitch_dir))
-                sheets.append(self.stitch_two(pages[2 * i + 1], pages[total - 2 - 2 * i], stitch_dir))
+            sig_raw = getattr(self, "signature_var", tk.StringVar(value=DEFAULT_PAGES_PER_SIGNATURE)).get()
+            sig_size = parse_pages_per_signature(sig_raw, len(pages))
+            for left_i, right_i in booklet_sheet_pairs(len(pages), sig_size):
+                sheets.append(self.stitch_two(pages[left_i], pages[right_i], stitch_dir))
+            sig_note = f", sig={sig_size}"
         else:
             raise ValueError(f"Unknown mode: {mode}")
 
@@ -156,15 +189,20 @@ class NupBookletPlugin(BaseFileOperation):
         if not dest.suffix.lower() == ".pdf":
             dest = dest.with_suffix(".pdf")
         sheets[0].save(dest, save_all=True, append_images=sheets[1:] if len(sheets) > 1 else [])
-        print(f"Saved {mode} ({stitch_dir}) -> {dest}")
+        print(f"Saved {mode} ({stitch_dir}{sig_note}) -> {dest}")
 
-    def _toggle_nup_fields(self, *_):
-        if not hasattr(self, "_nup_frame"):
-            return
-        state = "normal" if self.mode_var.get() == "N-up" else "disabled"
-        for child in self._nup_frame.winfo_children():
+    def _toggle_mode_fields(self, *_):
+        mode = self.mode_var.get() if hasattr(self, "mode_var") else ""
+        if hasattr(self, "_nup_frame"):
+            nup_state = "normal" if mode == "N-up" else "disabled"
+            for child in self._nup_frame.winfo_children():
+                try:
+                    child.configure(state=nup_state)
+                except tk.TclError:
+                    pass
+        if hasattr(self, "_sig_cb"):
             try:
-                child.configure(state=state)
+                self._sig_cb.configure(state="readonly" if mode == "Booklet" else "disabled")
             except tk.TclError:
                 pass
 
@@ -182,7 +220,7 @@ class NupBookletPlugin(BaseFileOperation):
             width=14,
         )
         mode_cb.grid(row=0, column=1, sticky="ew", pady=1)
-        mode_cb.bind("<<ComboboxSelected>>", self._toggle_nup_fields)
+        mode_cb.bind("<<ComboboxSelected>>", self._toggle_mode_fields)
 
         ttk.Label(frame, text="Stitch").grid(row=1, column=0, sticky="w", pady=1)
         self.binding_var = tk.StringVar(value="Auto")
@@ -213,11 +251,22 @@ class NupBookletPlugin(BaseFileOperation):
         self.rows_var = tk.StringVar(value="2")
         ttk.Entry(self._nup_frame, textvariable=self.rows_var, width=4).pack(side=tk.LEFT, padx=2)
 
-        ttk.Label(frame, text="Output").grid(row=4, column=0, sticky="w", pady=1)
-        self.output_name_var = tk.StringVar(value="nup_output.pdf")
-        ttk.Entry(frame, textvariable=self.output_name_var, width=16).grid(row=4, column=1, sticky="ew", pady=1)
+        ttk.Label(frame, text="Sig pages").grid(row=4, column=0, sticky="w", pady=1)
+        self.signature_var = tk.StringVar(value=DEFAULT_PAGES_PER_SIGNATURE)
+        self._sig_cb = ttk.Combobox(
+            frame,
+            textvariable=self.signature_var,
+            values=list(SIGNATURE_CHOICES),
+            state="readonly",
+            width=14,
+        )
+        self._sig_cb.grid(row=4, column=1, sticky="ew", pady=1)
 
-        self._toggle_nup_fields()
+        ttk.Label(frame, text="Output").grid(row=5, column=0, sticky="w", pady=1)
+        self.output_name_var = tk.StringVar(value="nup_output.pdf")
+        ttk.Entry(frame, textvariable=self.output_name_var, width=16).grid(row=5, column=1, sticky="ew", pady=1)
+
+        self._toggle_mode_fields()
         return frame
 
     def get_output_path(self, output_dir, files):
@@ -227,15 +276,48 @@ class NupBookletPlugin(BaseFileOperation):
 # Keep old module path usable; class renamed for clarity
 
 
+def _self_check() -> None:
+    # One nest of 8 pages: outer (7|0), inner (1|6), then (5|2), (3|4)
+    assert booklet_sheet_pairs(8, 8) == [(7, 0), (1, 6), (5, 2), (3, 4)]
+    # Two signatures of 8 from 16 pages
+    assert booklet_sheet_pairs(16, 8) == [
+        (7, 0),
+        (1, 6),
+        (5, 2),
+        (3, 4),
+        (15, 8),
+        (9, 14),
+        (13, 10),
+        (11, 12),
+    ]
+    assert parse_pages_per_signature("All", 40) == 40
+    assert parse_pages_per_signature("32", 100) == 32
+    assert parse_pages_per_signature("30", 100) == 28
+    print("flipbook_generator self-check OK")
+
+
 def cli_main():
     parser = argparse.ArgumentParser(description="N-up / Booklet page imposition")
-    parser.add_argument("-i", "--inputs", nargs="+", required=True)
+    parser.add_argument("-i", "--inputs", nargs="+", required=False, default=[])
     parser.add_argument("-o", "--output", default="")
     parser.add_argument("--mode", choices=["1-up", "2-up", "N-up", "Booklet"], default="Booklet")
     parser.add_argument("--binding", choices=["Auto", "Horizontal", "Vertical"], default="Auto")
     parser.add_argument("--cols", default="2")
     parser.add_argument("--rows", default="2")
+    parser.add_argument(
+        "--pages-per-signature",
+        default=DEFAULT_PAGES_PER_SIGNATURE,
+        help=f"Booklet nest size: {', '.join(SIGNATURE_CHOICES)} (default {DEFAULT_PAGES_PER_SIGNATURE})",
+    )
+    parser.add_argument("--self-check", action="store_true", help="Run booklet signature asserts and exit")
     args = parser.parse_args()
+
+    if args.self_check:
+        _self_check()
+        return
+
+    if not args.inputs:
+        parser.error("the following arguments are required: -i/--inputs")
 
     plugin = NupBookletPlugin()
     files = plugin.filter_inputs(plugin.collect_input_files(args.inputs))
@@ -248,6 +330,7 @@ def cli_main():
     plugin.rotation_var = tk.StringVar(value="None")
     plugin.cols_var = tk.StringVar(value=args.cols)
     plugin.rows_var = tk.StringVar(value=args.rows)
+    plugin.signature_var = tk.StringVar(value=args.pages_per_signature)
     plugin.output_name_var = tk.StringVar(value="nup_output.pdf")
 
     out = args.output.strip() or str(Path(files[0]).parent)

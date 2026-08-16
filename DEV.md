@@ -4,7 +4,7 @@ How to add a tool that works in the host (`modular-file-manager.py`), as a stand
 
 ## Layout
 
-```
+```python
 PYTHON-modular-file-manager/
   modular-file-manager.py   # BaseFileOperation, theme, host UI, StandalonePluginApp, plugin_entry
   plugins/
@@ -33,7 +33,7 @@ plugin_entry = _host.plugin_entry
 ```
 
 | Attribute / method | Required | Purpose |
-|--------------------|----------|---------|
+| -------------------- | ---------- | --------- |
 | `name` | yes | Unique label in the host tool dropdown |
 | `description` | no | Human summary |
 | `supported_extensions` | no | Tuple like `(".pdf", ".png")`; empty `()` = accept all |
@@ -146,7 +146,7 @@ plugin_entry(ExampleToolPlugin, cli_main)
 ```
 
 | How you run it | Behavior |
-|----------------|----------|
+| ---------------- | ---------- |
 | `python plugins/example_tool.py` | No argv beyond script → `StandalonePluginApp` (compact GUI) |
 | `python plugins/example_tool.py -i ...` | Calls `cli_main()` |
 | `python modular-file-manager.py` | Host loads all plugins; shared queue + sidebar options |
@@ -156,7 +156,7 @@ Do **not** put argparse or GUI launch code at import time (module body). Only un
 ## Host vs standalone
 
 | | Host (`UniversalToolkitApp`) | Standalone (`StandalonePluginApp`) |
-|--|------------------------------|-------------------------------------|
+| -- | ------------------------------ | ------------------------------------- |
 | Queue | Treeview + search + optional extra columns | Simple listbox |
 | Options | Scrollable left sidebar | Right-hand card |
 | Output UI | Shown if `needs_output_dir` | Same |
@@ -187,10 +187,10 @@ Implement logic once in the plugin class; both shells only call `render_options_
 ## Reference plugins
 
 | Module | Notes |
-|--------|--------|
+| -------- | -------- |
 | `file_renamer.py` | `needs_output_dir = False`, live preview columns |
 | `pdf_merger.py` | Custom `get_output_path` for a single output file |
 | `pdf_compressor.py` | Ghostscript via `tools/GhostScript` (or PATH) |
-| `flipbook_generator.py` | Mode-dependent options (N-up cols/rows) |
+| `flipbook_generator.py` | Mode-dependent options (N-up cols/rows; Booklet sig pages) |
 | `pdf_to_markdown.py` | Multiple engines + OCR tabs |
 | `pdf_stitcher.py` | Compact option rows + CLI seeding pattern |
