@@ -12,6 +12,7 @@ import queue
 import subprocess
 import sys
 import time
+import webbrowser
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -132,6 +133,58 @@ DEFAULT_COLORS = {
     "log_bg": "#1A2332",
     "log_fg": "#D7E0EA",
 }
+
+AUTHOR_NAME = "Alex of Rhodes"
+AUTHOR_EMAIL = "alexofrhodes@gmail.com"
+AUTHOR_GITHUB = "https://github.com/alexofrhodes"
+
+
+def center_window(win: tk.Misc, width: Optional[int] = None, height: Optional[int] = None) -> None:
+    """Place window in the middle of the screen (keeps size if width/height omitted)."""
+    win.update_idletasks()
+    if width is None or height is None:
+        wh = win.winfo_width(), win.winfo_height()
+        # Before map, winfo_* can be 1; fall back to geometry string
+        geo = win.geometry().split("+", 1)[0]
+        try:
+            gw, gh = (int(x) for x in geo.split("x", 1))
+        except ValueError:
+            gw, gh = 800, 600
+        if width is None:
+            width = gw if wh[0] <= 1 else wh[0]
+        if height is None:
+            height = gh if wh[1] <= 1 else wh[1]
+    sw = win.winfo_screenwidth()
+    sh = win.winfo_screenheight()
+    x = max(0, (sw - width) // 2)
+    y = max(0, (sh - height) // 2)
+    win.geometry(f"{width}x{height}+{x}+{y}")
+
+
+def parse_geometry_size(geo: str) -> Optional[Tuple[int, int]]:
+    """Extract WxH from a Tk geometry string."""
+    try:
+        wh = geo.split("+", 1)[0]
+        w, h = wh.split("x", 1)
+        return int(w), int(h)
+    except (ValueError, IndexError):
+        return None
+
+
+def make_link_label(parent, text: str, url: str, colors: dict, **pack_kwargs) -> tk.Label:
+    """Accent-colored clickable label (no underline)."""
+    lbl = tk.Label(
+        parent,
+        text=text,
+        fg=colors["accent"],
+        bg=colors["page"],
+        cursor="hand2",
+        font=("Segoe UI", 9),
+        anchor="w",
+    )
+    lbl.pack(**pack_kwargs)
+    lbl.bind("<Button-1>", lambda _e: webbrowser.open(url))
+    return lbl
 
 
 def apply_toolkit_styles(root: tk.Tk | tk.Toplevel, colors: Optional[dict] = None) -> dict:
@@ -351,6 +404,7 @@ class StandalonePluginApp:
         self.root.title(plugin.name)
         self.root.geometry("720x560")
         self.root.minsize(560, 420)
+        center_window(self.root, 720, 560)
 
         self._build()
         self._drop_bridge = TkDropBridge(self.root, self._process_drop)
@@ -568,6 +622,7 @@ class UniversalToolkitApp:
         self.root.title(self.APP_NAME)
         self.root.geometry("1000x640")
         self.root.minsize(800, 480)
+        center_window(self.root, 1000, 640)
 
         self.operations: Dict[str, BaseFileOperation] = {}
         self.file_queue: List[dict] = []
@@ -853,18 +908,29 @@ class UniversalToolkitApp:
 
         frame = ttk.Frame(win, padding=16)
         frame.pack(fill=tk.BOTH, expand=True)
+
         ttk.Label(frame, text=self.APP_NAME, style="Title.TLabel").pack(anchor=tk.W)
+        ttk.Label(
+            frame,
+            text=AUTHOR_NAME,
+            font=("Segoe UI Semibold", 10),
+            background=c["page"],
+        ).pack(anchor=tk.W, pady=(8, 2))
+        make_link_label(frame, AUTHOR_EMAIL, f"mailto:{AUTHOR_EMAIL}", c, anchor=tk.W)
+        make_link_label(frame, AUTHOR_GITHUB, AUTHOR_GITHUB, c, anchor=tk.W, pady=(2, 10))
         ttk.Label(
             frame,
             text="Drop-in plugins in /plugins auto-load here.\n"
             "Each plugin also runs alone:  python plugins/<name>.py",
             style="Subtitle.TLabel",
             justify=tk.LEFT,
-        ).pack(anchor=tk.W, pady=(4, 10))
-        ttk.Label(frame, text="Alex of Rhodes", font=("Segoe UI Semibold", 10), background=c["page"]).pack(anchor=tk.W)
-        ttk.Label(frame, text="alexofrhodes@gmail.com", style="Subtitle.TLabel").pack(anchor=tk.W)
-        ttk.Label(frame, text="https://github.com/", style="Subtitle.TLabel").pack(anchor=tk.W, pady=(0, 10))
+        ).pack(anchor=tk.W, pady=(0, 12))
         ttk.Button(frame, text="Close", style="Toolbar.TButton", command=win.destroy).pack(anchor=tk.E)
+
+        win.update_idletasks()
+        w = win.winfo_reqwidth()
+        h = win.winfo_reqheight()
+        center_window(win, w, h)
 
     def resolve_output_dir(self) -> str:
         if self.current_plugin and not getattr(self.current_plugin, "needs_output_dir", True):
@@ -1207,7 +1273,9 @@ class UniversalToolkitApp:
             self._plugin_options = data.get("plugin_options") or {}
             if data.get("geometry"):
                 try:
-                    self.root.geometry(data["geometry"])
+                    size = parse_geometry_size(data["geometry"])
+                    if size:
+                        center_window(self.root, size[0], size[1])
                 except Exception:
                     pass
             tool = data.get("selected_tool")

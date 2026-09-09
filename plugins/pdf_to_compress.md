@@ -1,4 +1,4 @@
-# PDF Compressor
+# PDF Compressor (`pdf_to_compress.py`)
 
 Shrink PDFs with Ghostscript.
 
@@ -25,6 +25,6 @@ Writes `{stem}_compressed.pdf` into the host OUTPUT folder (or beside the source
 
 ```bash
 python modular-file-manager.py
-python plugins/pdf_compressor.py
-python plugins/pdf_compressor.py -i doc.pdf --mode mid
+python plugins/pdf_to_compress.py
+python plugins/pdf_to_compress.py -i doc.pdf --mode mid
 ```

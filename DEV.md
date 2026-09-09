@@ -151,6 +151,8 @@ plugin_entry(ExampleToolPlugin, cli_main)
 | `python plugins/example_tool.py -i ...` | Calls `cli_main()` |
 | `python modular-file-manager.py` | Host loads all plugins; shared queue + sidebar options |
 
+Every plugin is separable later: keep `plugin_entry` at the bottom so `python plugins/<file>.py` runs that tool alone. Prefer filenames `{inputs}_to_{output}.py`.
+
 Do **not** put argparse or GUI launch code at import time (module body). Only under `cli_main` / `if __name__ == "__main__"`. Side effects on import break host auto-load.
 
 ## Host vs standalone
@@ -186,11 +188,14 @@ Implement logic once in the plugin class; both shells only call `render_options_
 
 ## Reference plugins
 
+Filename pattern: `{input(s)}_to_{output_or_action}.py`
+
 | Module | Notes |
 | -------- | -------- |
-| `file_renamer.py` | `needs_output_dir = False`, live preview columns |
-| `pdf_merger.py` | Custom `get_output_path` for a single output file |
-| `pdf_compressor.py` | Ghostscript via `tools/GhostScript` (or PATH) |
-| `flipbook_generator.py` | Mode-dependent options (N-up cols/rows; Booklet sig pages) |
-| `pdf_to_markdown.py` | Multiple engines + OCR tabs |
-| `pdf_stitcher.py` | Compact option rows + CLI seeding pattern |
+| `files_to_rename.py` | `needs_output_dir = False`, live preview columns |
+| `docs_to_merge.py` | Custom `get_output_path` for a single output file |
+| `pdf_to_compress.py` | Ghostscript via `tools/GhostScript` (or PATH) |
+| `images_pdf_to_nup.py` | Mode-dependent options (N-up cols/rows; Booklet sig pages) |
+| `docs_to_markdown.py` | Multiple engines + OCR tabs |
+| `images_pdf_to_stitch.py` | Compact option rows + CLI seeding pattern |
+| `images_to_format.py` | Format convert + folder watch (GUI/CLI) |

@@ -1,6 +1,7 @@
+watchdog
+Pillow
 docx2pdf
 pdfplumber
-Pillow
 pptx2md
 PyMuPDF
 pymupdf4llm

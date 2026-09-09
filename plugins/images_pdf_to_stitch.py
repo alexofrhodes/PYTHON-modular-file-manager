@@ -23,7 +23,7 @@ plugin_entry = _host.plugin_entry
 
 
 class DocumentAndImageStitcherPlugin(BaseFileOperation):
-    name = "Image / Doc Stitcher"
+    name = "Image / PDF Stitcher"
     description = "Stitch images or PDF pages into Vertical, Horizontal, or Grid layouts."
     supported_extensions = (".png", ".jpg", ".jpeg", ".webp", ".pdf")
     needs_output_dir = True

@@ -2,13 +2,15 @@
 
 Modular desktop toolkit. Drop a plugin into `plugins/` — it auto-loads in the host and can also run alone.
 
+Plugins use filenames `{inputs}_to_{output}` (e.g. `docs_to_markdown.py`, `pdf_to_compress.py`). Each tool is separable: `python plugins/<name>.py` opens its standalone GUI.
+
 ## Run
 
 ```bash
 pip install -r requirements.txt
-python modular-file-manager.py         # host (all plugins)
-python plugins/file_renamer.py         # standalone GUI (no args)
-python plugins/file_renamer.py -i a.txt --prefix x_   # CLI when args given
+python modular-file-manager.py              # host (all plugins)
+python plugins/files_to_rename.py           # standalone GUI (no args)
+python plugins/files_to_rename.py -i a.txt --prefix x_   # CLI when args given
 ```
 
 ## Add a plugin
@@ -23,4 +25,8 @@ Plugins with `needs_output_dir = False` hide the output folder UI (e.g. Batch Fi
 
 ## PDF Compressor
 
-Uses portable Ghostscript from `tools/GhostScript/bin` (or `gs` on PATH). See [plugins/pdf_compressor.md](plugins/pdf_compressor.md).
+Uses portable Ghostscript from `tools/GhostScript/bin` (or `gs` on PATH). See [plugins/pdf_to_compress.md](plugins/pdf_to_compress.md).
+
+## Image Format Converter
+
+Convert images beside their sources; optional folder watch. See [plugins/images_to_format.md](plugins/images_to_format.md).

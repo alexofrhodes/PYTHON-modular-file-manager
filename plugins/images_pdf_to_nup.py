@@ -293,7 +293,7 @@ def _self_check() -> None:
     assert parse_pages_per_signature("All", 40) == 40
     assert parse_pages_per_signature("32", 100) == 32
     assert parse_pages_per_signature("30", 100) == 28
-    print("flipbook_generator self-check OK")
+    print("images_pdf_to_nup self-check OK")
 
 
 def cli_main():
