@@ -6,6 +6,8 @@ pptx2md
 PyMuPDF
 pymupdf4llm
 pypdf
+pdfposter
+qrcode
 pytesseract
 python-docx
 windnd
